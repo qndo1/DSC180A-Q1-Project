@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import ot
 import numpy as np
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     download_mocap.main_downloader(download_limit=1)
@@ -29,14 +30,12 @@ if __name__ == "__main__":
 
     G = ot.solve(M, a, b).plan
 
-    import matplotlib.pyplot as plt
-
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")
 
     # scatter the two frames
     ax.scatter(frame_one[:, 2], frame_one[:, 1], frame_one[:, 0], c="C0", s=30, label="frame 1")
-    ax.scatter(frame_two[:, 2], frame_two[:, 1], frame_two[:, 0], c="C1", marker="^", s=40, label="frame 50")
+    ax.scatter(frame_two[:, 2], frame_two[:, 1], frame_two[:, 0], c="C1", marker="^", s=40, label="frame 500")
     ax.set_xlim(-1000, 1000)
     ax.set_ylim(-1000, 1000)
     ax.set_zlim(0, 2000)
