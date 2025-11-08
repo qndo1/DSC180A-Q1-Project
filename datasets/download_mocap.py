@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-def download_files_by_extension(links, base_url, extension, download_dir):
+def download_files_by_extension(links, base_url, extension, download_dir, download_limit = 1000):
     """
     A helper function to find and download all files with a specific extension.
     
@@ -41,6 +41,9 @@ def download_files_by_extension(links, base_url, extension, download_dir):
     skipped_count = 0
 
     for file_url in target_links:
+        if downloaded_count >= download_limit:
+            print(f"Download limit ({download_limit}) reached. Halting further downloads.")
+            break
         filename = os.path.basename(file_url)
         save_path = os.path.join(download_dir, filename)
 
@@ -65,7 +68,7 @@ def download_files_by_extension(links, base_url, extension, download_dir):
     print(f"Successfully downloaded: {downloaded_count} files")
     print(f"Skipped (already exist): {skipped_count} files")
 
-def main_downloader():
+def main_downloader(download_limit = 1000):
     base_url = "https://mocap.cs.sfu.ca/"
     
     # --- 1. Fetch the main page content ONCE ---
@@ -83,11 +86,13 @@ def main_downloader():
     all_links = soup.find_all('a') # Get all links from the page
 
     # --- 3. Run the download process for each file type ---
-    download_files_by_extension(all_links, base_url, ".bvh", "bvh_files")
-    download_files_by_extension(all_links, base_url, ".vsk", "vsk_files")
+    # download_files_by_extension(all_links, base_url, ".bvh", "bvh_files")
+    # download_files_by_extension(all_links, base_url, ".vsk", "vsk_files")
+    download_files_by_extension(all_links, base_url, ".txt", "txt_files", download_limit = download_limit)
 
     print("\nAll tasks complete.")
 
 # --- Run the main downloader function ---
 if __name__ == "__main__":
     main_downloader()
+
