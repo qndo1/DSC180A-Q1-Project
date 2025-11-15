@@ -100,7 +100,7 @@ class LoadCloudPoint:
             pass
          
         self.filepath = Path(filepath)
-        self.point_cloud = pd.read_csv(filepath).to_numpy() 
+        self.point_cloud = pd.read_csv(filepath).to_numpy()
     
     def get_two_random_point_cloud(self):
         idx_1 = np.random.choice(self.point_cloud.shape[0]//2)
@@ -117,9 +117,13 @@ class DistanceProfile:
     def compute_L2_matrix(self):
         n_source = self.source.shape[0]
         n_target = self.target.shape[0]
-        distance_matrix = np.zeros((n_source, n_target))
-        for i in range(n_source):
-            for j in range(n_target):
-                distance_matrix[i, j] = np.linalg.norm(self.source[i] - self.target[j], ord=2)
-        return distance_matrix
+        distance_matrix = np.array([np.zeros((n_source, n_source)), np.zeros((n_target, n_target))])
+        count = -1
+        for cp in [self.source, self.target]:
+            count += 1
+            n = cp.shape[0]
+            for i in range(n):
+                for j in range(n):
+                    distance_matrix[count][i, j] = np.linalg.norm(cp[i] - cp[j])
+        return distance_matrix[0], distance_matrix[1]
     
