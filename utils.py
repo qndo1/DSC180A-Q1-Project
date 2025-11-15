@@ -81,7 +81,7 @@ def compute_gw_and_plot(xs, xt):
 
 # ----------------------------------------------------
 # Takafumi's work
-# one txt file -> 2 point clouds -> distance profiles 
+# one txt file -> 2 point clouds -> distance profiles
 # example code
 # lcp = LoadCloudPoint()
 # source_pc, target_pc = lcp.get_two_random_point_cloud()
@@ -98,10 +98,10 @@ class LoadCloudPoint:
             filepath = np.random.choice(csv_list)
         else:
             pass
-         
+
         self.filepath = Path(filepath)
-        self.point_cloud = pd.read_csv(filepath).to_numpy() 
-    
+        self.point_cloud = pd.read_csv(filepath).to_numpy()
+
     def get_two_random_point_cloud(self):
         idx_1 = np.random.choice(self.point_cloud.shape[0]//2)
         idx_2 = np.random.choice(self.point_cloud.shape[0]//2) + self.point_cloud.shape[0]//2
@@ -122,4 +122,3 @@ class DistanceProfile:
             for j in range(n_target):
                 distance_matrix[i, j] = np.linalg.norm(self.source[i] - self.target[j], ord=2)
         return distance_matrix
-    
