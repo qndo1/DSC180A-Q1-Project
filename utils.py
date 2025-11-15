@@ -1,8 +1,11 @@
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import pandas as pd
+from pathlib import Path
 import ot
 import scipy as sp
+import matplotlib.pyplot as plt
 
 def plot_3d_points_and_connections(points1, points2, G):
     # Ensure numpy arrays
@@ -74,3 +77,49 @@ def compute_gw_and_plot(xs, xt):
     fig = plot_3d_points_and_connections(xt, xs, G0)
     print("hi")
     return fig, G0
+
+
+# ----------------------------------------------------
+# Takafumi's work
+# one txt file -> 2 point clouds -> distance profiles 
+# example code
+# lcp = LoadCloudPoint()
+# source_pc, target_pc = lcp.get_two_random_point_cloud()
+# dp = DistanceProfile(source_pc, target_pc)
+# distance_matrix = dp.compute_L2_matrix()
+# print(distance_matrix)
+# ----------------------------------------------------
+
+class LoadCloudPoint:
+    def __init__(self, filepath=None):
+        if filepath == None:
+            csv_dir = Path("datasets/csv_files")
+            csv_list = sorted(csv_dir.glob("*.csv"))
+            filepath = np.random.choice(csv_list)
+        else:
+            pass
+         
+        self.filepath = Path(filepath)
+        self.point_cloud = pd.read_csv(filepath).to_numpy() 
+    
+    def get_two_random_point_cloud(self):
+        idx_1 = np.random.choice(self.point_cloud.shape[0]//2)
+        idx_2 = np.random.choice(self.point_cloud.shape[0]//2) + self.point_cloud.shape[0]//2
+        source = self.point_cloud[idx_1].reshape(-1,3)
+        target = self.point_cloud[idx_2].reshape(-1,3)
+        return source, target
+
+class DistanceProfile:
+    def __init__(self, source, target):
+        self.source = source
+        self.target = target
+
+    def compute_L2_matrix(self):
+        n_source = self.source.shape[0]
+        n_target = self.target.shape[0]
+        distance_matrix = np.zeros((n_source, n_target))
+        for i in range(n_source):
+            for j in range(n_target):
+                distance_matrix[i, j] = np.linalg.norm(self.source[i] - self.target[j], ord=2)
+        return distance_matrix
+    
