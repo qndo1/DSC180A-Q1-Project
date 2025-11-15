@@ -8,6 +8,21 @@ import scipy as sp
 import matplotlib.pyplot as plt
 
 def plot_3d_points_and_connections(points1, points2, G):
+    if points1.shape[0] != points2.shape[0]:
+        raise ValueError("Point clouds are not the same length")
+
+    if G.shape[0] != G.shape[1]:
+        raise ValueError("Matching matrix is not square")
+
+    if G.shape[0] != points1.shape[0]:
+        raise ValueError("Matching matrix dimensions don't match point cloud dimensions")
+
+    if np.count_nonzero(G) > points1.shape[0]:
+        raise ValueError("Matching has too many nonzero entries")
+
+    if np.count_nonzero(G) < points1.shape[0]:
+        raise ValueError("Matching has too few nonzero entries")
+
     # Ensure numpy arrays
     points1 = np.asarray(points1)
     points2 = np.asarray(points2)
@@ -117,8 +132,13 @@ class DistanceProfile:
     def compute_L2_matrix(self):
         n_source = self.source.shape[0]
         n_target = self.target.shape[0]
-        distance_matrix = np.zeros((n_source, n_target))
-        for i in range(n_source):
-            for j in range(n_target):
-                distance_matrix[i, j] = np.linalg.norm(self.source[i] - self.target[j], ord=2)
-        return distance_matrix
+        distance_matrix = np.array([np.zeros((n_source, n_source)), np.zeros((n_target, n_target))])
+        count = -1
+        for cp in [self.source, self.target]:
+            count += 1
+            n = cp.shape[0]
+            for i in range(n):
+                for j in range(n):
+                    distance_matrix[count][i, j] = np.linalg.norm(cp[i] - cp[j])
+        return distance_matrix[0], distance_matrix[1]
+
