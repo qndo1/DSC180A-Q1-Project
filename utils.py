@@ -13,16 +13,16 @@ def plot_3d_points_and_connections(points1, points2, G):
 
     if G.shape[0] != G.shape[1]:
         raise ValueError("Matching matrix is not square")
-    
+
     if G.shape[0] != points1.shape[0]:
         raise ValueError("Matching matrix dimensions don't match point cloud dimensions")
-    
+
     if np.count_nonzero(G) > points1.shape[0]:
         raise ValueError("Matching has too many nonzero entries")
-    
+
     if np.count_nonzero(G) < points1.shape[0]:
         raise ValueError("Matching has too few nonzero entries")
-    
+
     # Ensure numpy arrays
     points1 = np.asarray(points1)
     points2 = np.asarray(points2)
@@ -96,7 +96,7 @@ def compute_gw_and_plot(xs, xt):
 
 # ----------------------------------------------------
 # Takafumi's work
-# one txt file -> 2 point clouds -> distance profiles 
+# one txt file -> 2 point clouds -> distance profiles
 # example code
 # lcp = LoadCloudPoint()
 # source_pc, target_pc = lcp.get_two_random_point_cloud()
@@ -113,10 +113,10 @@ class LoadCloudPoint:
             filepath = np.random.choice(csv_list)
         else:
             pass
-         
+
         self.filepath = Path(filepath)
         self.point_cloud = pd.read_csv(filepath).to_numpy()
-    
+
     def get_two_random_point_cloud(self):
         idx_1 = np.random.choice(self.point_cloud.shape[0]//2)
         idx_2 = np.random.choice(self.point_cloud.shape[0]//2) + self.point_cloud.shape[0]//2
@@ -141,4 +141,71 @@ class DistanceProfile:
                 for j in range(n):
                     distance_matrix[count][i, j] = np.linalg.norm(cp[i] - cp[j])
         return distance_matrix[0], distance_matrix[1]
-    
+
+
+#Quy-Dzu work
+
+import numpy as np
+from ot import wasserstein_1d, emd
+
+
+def compute_W_matrix_distance_matrix_input(X_dists, Y_dists):
+    """
+    Computes W(i,j) for all i ∈ [n], j ∈ [m] as defined in the equation.
+
+    X: array of shape (n, d)
+    Y: array of shape (m, d)
+
+    Returns: W matrix of shape (n, m)
+    """
+    n, _ = X_dists.shape
+    m, _ = Y_dists.shape
+
+    W = np.zeros((n, m))
+
+    # Calculate D(i, j) which is the Wasserstein distance between the distributions of distances
+
+    for i in range(n):
+        Xi_distances = X_dists[i]  # vector of length n
+        for j in range(m):
+            Yj_distances = Y_dists[j]  # vector of length m
+
+            # Wasserstein between the two empirical distributions
+            W[i, j] = wasserstein_1d(Xi_distances, Yj_distances)
+
+    map_matrix = emd(np.ones(n) / n, np.ones(m) / m, W)
+
+    return W, map_matrix
+
+def compute_W_matrix(X, Y):
+    """
+    Computes W(i,j) for all i ∈ [n], j ∈ [m] as defined in the equation.
+
+    X: array of shape (n, d)
+    Y: array of shape (m, d)
+
+    Returns: W matrix of shape (n, m)
+    """
+    n, _ = X.shape
+    m, _ = Y.shape
+
+    # Precompute all intra-set distances ||X_i - X_ℓ|| and ||Y_j - Y_ℓ||
+    X_dists = np.linalg.norm(X[:, None, :] - X[None, :, :], axis=2)  # shape (n, n)
+    Y_dists = np.linalg.norm(Y[:, None, :] - Y[None, :, :], axis=2)  # shape (m, m)
+
+    W = np.zeros((n, m))
+
+    # Calculate D(i, j) which is the Wasserstein distance between the distributions of distances
+
+    for i in range(n):
+        Xi_distances = X_dists[i]  # vector of length n
+        for j in range(m):
+            Yj_distances = Y_dists[j]  # vector of length m
+
+            # Wasserstein between the two empirical distributions
+            W[i, j] = wasserstein_1d(Xi_distances, Yj_distances)
+
+    map_matrix = emd(np.ones(n) / n, np.ones(m) / m, W)
+
+    return W, map_matrix
+
