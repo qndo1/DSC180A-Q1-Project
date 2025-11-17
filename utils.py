@@ -7,7 +7,7 @@ import ot
 import scipy as sp
 import matplotlib.pyplot as plt
 
-def plot_3d_points_and_connections(points1, points2, G, switch_xz = True):
+def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_incorrect = False):
     """
     Given points1, points2, and G, plot the points and lines between matching points. If switch_xz is true then this will switch the x and z coordinates before plotting (since by default in the mocap data the x is the vertical axis).
     points1, points2: Nx3 arrays
@@ -63,6 +63,9 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True):
     for i in range(G.shape[0]):
         for j in range(G.shape[1]):
             if G[i, j] != 0:
+                c = "gray"
+                if color_incorrect and i != j:
+                    c = "red"
                 p1 = points1[i]
                 p2 = points2[j]
                 fig.add_trace(go.Scatter3d(
@@ -70,7 +73,7 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True):
                     y=[p1[1], p2[1]],
                     z=[p1[z_ind], p2[z_ind]],
                     mode='lines',
-                    line=dict(color='gray', width=2),
+                    line=dict(color=c, width=2),
                     showlegend=False
                 ))
 
