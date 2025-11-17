@@ -7,11 +7,12 @@ import ot
 import scipy as sp
 import matplotlib.pyplot as plt
 
-def plot_3d_points_and_connections(points1, points2, G):
+def plot_3d_points_and_connections(points1, points2, G, switch_xz = True):
     """
-    Given points1, points2, and G, plot the points and lines between matching points.
+    Given points1, points2, and G, plot the points and lines between matching points. If switch_xz is true then this will switch the x and z coordinates before plotting (since by default in the mocap data the x is the vertical axis).
     points1, points2: Nx3 arrays
     G: NxN array
+    switch_xz: Boolean
     """
     if points1.shape[0] != points2.shape[0]:
         raise ValueError("Point clouds are not the same length")
@@ -28,6 +29,13 @@ def plot_3d_points_and_connections(points1, points2, G):
     if np.count_nonzero(G) < points1.shape[0]:
         raise ValueError("Matching has too few nonzero entries")
 
+    if switch_xz:
+        x_ind = 2
+        z_ind = 0
+    else:
+        x_ind = 0
+        z_ind = 2
+
     # Ensure numpy arrays
     points1 = np.asarray(points1)
     points2 = np.asarray(points2)
@@ -37,7 +45,7 @@ def plot_3d_points_and_connections(points1, points2, G):
 
     # Plot first set of 3D points
     fig.add_trace(go.Scatter3d(
-        x=points1[:, 2], y=points1[:, 1], z=points1[:, 0],
+        x=points1[:, x_ind], y=points1[:, 1], z=points1[:, z_ind],
         mode='markers',
         marker=dict(size=5, color='blue'),
         name='Points 1'
@@ -45,7 +53,7 @@ def plot_3d_points_and_connections(points1, points2, G):
 
     # Plot second set of 3D points
     fig.add_trace(go.Scatter3d(
-        x=points2[:, 2], y=points2[:, 1], z=points2[:, 0],
+        x=points2[:, x_ind], y=points2[:, 1], z=points2[:, z_ind],
         mode='markers',
         marker=dict(size=5, color='red'),
         name='Points 2'
@@ -58,9 +66,9 @@ def plot_3d_points_and_connections(points1, points2, G):
                 p1 = points1[i]
                 p2 = points2[j]
                 fig.add_trace(go.Scatter3d(
-                    x=[p1[2], p2[2]],
+                    x=[p1[x_ind], p2[x_ind]],
                     y=[p1[1], p2[1]],
-                    z=[p1[0], p2[0]],
+                    z=[p1[z_ind], p2[z_ind]],
                     mode='lines',
                     line=dict(color='gray', width=2),
                     showlegend=False
