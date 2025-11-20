@@ -101,13 +101,28 @@ class LoadCloudPoint:
          
         self.filepath = Path(filepath)
         self.point_cloud = pd.read_csv(filepath).to_numpy()
-    
+        print(f"Loaded point cloud data from {self.filepath}, number of frames: {self.point_cloud.shape[0]}")
+
+    def get_entire_point_cloud(self):
+        """
+        Return the entire loaded point cloud data.
+        """
+        return self.point_cloud.reshape(self.point_cloud.shape[0], -1, 3)
     def get_two_random_point_cloud(self):
         idx_1 = np.random.choice(self.point_cloud.shape[0]//2)
         idx_2 = np.random.choice(self.point_cloud.shape[0]//2) + self.point_cloud.shape[0]//2
         source = self.point_cloud[idx_1].reshape(-1,3)
         target = self.point_cloud[idx_2].reshape(-1,3)
         return source, target
+
+    def get_point_cloud_at_index(self, index):
+        """
+        Get the point cloud at a specific index.
+        """
+        if index < 0 or index >= self.point_cloud.shape[0]:
+            raise ValueError(f"Index out of bounds. There are {self.point_cloud.shape[0]} frames in this file.")
+        pc = self.point_cloud[index].reshape(-1,3)
+        return pc
 
 class DistanceProfile:
     def __init__(self, source, target):
