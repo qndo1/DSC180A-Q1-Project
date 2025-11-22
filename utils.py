@@ -7,6 +7,9 @@ import ot
 import scipy as sp
 import matplotlib.pyplot as plt
 
+
+# Matt work
+
 def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_incorrect = False):
     """
     Given points1, points2, and G, plot the points and lines between matching points. If switch_xz is true then this will switch the x and z coordinates before plotting (since by default in the mocap data the x is the vertical axis).
@@ -109,6 +112,150 @@ def compute_gw_and_plot(xs, xt):
     print("hi")
     return fig, G0
 
+def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=True, color_incorrect=False):
+    """
+    Create a Plotly animation where each frame shows two point clouds and
+    the matchings between them.
+
+    points1_list, points2_list: lists of length N, each element is an Mx3 array
+    G_list: list of length N, each element is an MxM array
+    switch_xz: swap x,z axes for visualization
+    color_incorrect: highlight incorrect matches (i != j) in red
+    """
+    N = len(points1_list)
+    if not (len(points2_list) == len(G_list) == N):
+        raise ValueError("points1_list, points2_list, and G_list must have same length")
+
+    # Axis swapping logic
+    if switch_xz:
+        x_ind, z_ind = 2, 0
+    else:
+        x_ind, z_ind = 0, 2
+
+    # Prepare base figure
+    fig = go.Figure()
+
+    # --- INITIAL FRAME (frame 0) ---
+    p1 = points1_list[0]
+    p2 = points2_list[0]
+    G = G_list[0]
+
+    # Scatter traces for points (these remain and are updated in frames)
+    fig.add_trace(go.Scatter3d(
+        x=p1[:, x_ind], y=p1[:, 1], z=p1[:, z_ind],
+        mode="markers", marker=dict(size=5, color="blue"), name="Points 1"
+    ))
+    fig.add_trace(go.Scatter3d(
+        x=p2[:, x_ind], y=p2[:, 1], z=p2[:, z_ind],
+        mode="markers", marker=dict(size=5, color="red"), name="Points 2"
+    ))
+
+    # Create line traces for the *maximum possible* number of matches (M)
+    # We update their coordinates in each frame.
+    M = p1.shape[0]
+    line_traces = []
+    for _ in range(M):
+        line_traces.append(go.Scatter3d(
+            x=[None, None],
+            y=[None, None],
+            z=[None, None],
+            mode="lines",
+            line=dict(color="gray", width=2),
+            showlegend=False
+        ))
+        fig.add_trace(line_traces[-1])
+
+    # --- BUILD FRAMES ---
+    frames = []
+    for k in range(N):
+        p1 = points1_list[k]
+        p2 = points2_list[k]
+        G = G_list[k]
+
+        # Extract edges for this frame
+        xs, ys, zs, colors = [], [], [], []
+        for i in range(M):
+            for j in range(M):
+                if G[i, j] != 0:
+                    p1i = p1[i]
+                    p2j = p2[j]
+                    xs.append([p1i[x_ind], p2j[x_ind]])
+                    ys.append([p1i[1],    p2j[1]])
+                    zs.append([p1i[z_ind], p2j[z_ind]])
+                    colors.append("red" if color_incorrect and i != j else "gray")
+
+        # Ensure the number of stored line slots = M
+        # We fill missing lines with dummy points
+        while len(xs) < M:
+            xs.append([None, None])
+            ys.append([None, None])
+            zs.append([None, None])
+            colors.append("gray")
+
+        # Build frame data list
+        frame_data = []
+
+        # Updated points
+        frame_data.append(go.Scatter3d(
+            x=p1[:, x_ind], y=p1[:, 1], z=p1[:, z_ind],
+            mode="markers", marker=dict(size=5, color="blue")
+        ))
+        frame_data.append(go.Scatter3d(
+            x=p2[:, x_ind], y=p2[:, 1], z=p2[:, z_ind],
+            mode="markers", marker=dict(size=5, color="red")
+        ))
+
+        # Updated line connections
+        for idx in range(M):
+            frame_data.append(go.Scatter3d(
+                x=xs[idx],
+                y=ys[idx],
+                z=zs[idx],
+                mode="lines",
+                line=dict(color=colors[idx], width=2),
+                showlegend=False
+            ))
+
+        frames.append(go.Frame(data=frame_data, name=f"frame{k}"))
+
+    fig.frames = frames
+
+    # --- LAYOUT / ANIMATION CONTROLS ---
+    fig.update_layout(
+        title="Point Cloud Matching Animation",
+        scene=dict(aspectmode="data"),
+        template="plotly_white",
+        updatemenus=[
+            dict(
+                type="buttons",
+                showactive=False,
+                buttons=[
+                    dict(label="Play",
+                         method="animate",
+                         args=[None, {"frame": {"duration": 150, "redraw": True},
+                                      "fromcurrent": True}]),
+                    dict(label="Pause",
+                         method="animate",
+                         args=[[None], {"frame": {"duration": 0, "redraw": False},
+                                        "mode": "immediate"}])
+                ]
+            )
+        ],
+        sliders=[
+            dict(
+                steps=[
+                    dict(method="animate",
+                         args=[[f"frame{k}"], {"frame": {"duration": 0, "redraw": True}}],
+                         label=str(k))
+                    for k in range(N)
+                ],
+                currentvalue={"prefix": "Frame "}
+            )
+        ]
+    )
+
+    return fig
+
 
 # ----------------------------------------------------
 # Takafumi's work
@@ -149,6 +296,9 @@ class LoadCloudPoint:
         source = self.point_cloud[idx_1].reshape(-1,3)
         target = self.point_cloud[idx_2].reshape(-1,3)
         return source, target
+    
+    def get_pointclouds_range(self, indices):
+        return self.point_cloud[indices]
 
 class DistanceProfile:
     def __init__(self, source, target):
