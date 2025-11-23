@@ -5,7 +5,7 @@ from pathlib import Path
 import ot
 import numpy as np
 import matplotlib.pyplot as plt
-import utils
+import src.utils as utils
 
 if __name__ == "__main__":
 
