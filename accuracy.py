@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 def accuracy(matching):
     """
@@ -17,3 +17,8 @@ def accuracy(matching):
 
     return correct / n_points
     
+def dist_accuracy(pc1, pc2, matching):
+    row_normed = (np.linalg.inv(np.diag(np.sum(matching, axis = 1))) @ matching)
+    diffs = row_normed @ pc2 - pc2
+    diffnorms = np.linalg.norm(diffs, axis = 1)
+    return np.mean(diffnorms)
