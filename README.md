@@ -14,8 +14,7 @@ DSC180A-Q1-Project/
 ├── src/                    # All processing, matching, and evaluation code
 │   ├── __init__.py         # make src a Python package
 │   ├── accuracy/           # accuracy(), dist_accuracy()
-│   ├── utils/              # LoadCloudPoint, DistanceProfile, plotting functions
-│   └── plot_utils.py       # optional: 3D plotting & animation
+│   └── utils/              # LoadCloudPoint, DistanceProfile, plotting functions
 ├── notebooks/              # Used for visualizations
 ├── scripts/
 │   ├── matt_script.py      # Multi-frame matching animation using OT plans
