@@ -33,14 +33,30 @@ All notebooks are in the `notebooks/` folder and are used for exploration, visua
 | `distance_profile_qndo.ipynb` | Compare distance-profile OT (L1 & L2), vanilla OT, and GW OT matchings; visualize 3D matchings and compute accuracy. |
 | `fused_gromov.ipynb` | Apply Fused Gromov-Wasserstein OT, sweep alpha parameters, evaluate multi-timestep accuracy, and compare with standard Wasserstein. |
 
+## Running the Pipeline
+ This project demonstrates point cloud matching on MOCAP data using Optimal Transport, Distance Profiling, and Gromov-Wasserstein methods.
 
-## Datasets
+### 1. Setup
+Install Dependencies
+
+``` bash
+conda create -n dsc180a python=3.11
+conda activate dsc180a
+pip install -r requirements.txt
+```
+
+### 2. Data Acquisition
+```bash 
+# Download MoCap data (max 10,000 files)
+python scripts/download_and_convert.py
+```
+
 
 
 ### SFU MOCAP data
 run
 ```
-    script.py
+    download_and_convert.py
 ```
 This should download one of the mocap files and show the optimal transport matching between the first frame and the 500th frame. We've set the download and conversion limits as being 1, but feel free to remove those limits in script.py to download and convert the entire dataset.
 

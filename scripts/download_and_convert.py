@@ -1,11 +1,18 @@
-from datasets import download_mocap
-from datasets import txt_to_csv
+# Formerly matt_script.py
+import sys
+import os
+
+# Add project root (one level up) to Python path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from src.datasets.download_mocap import download_mocap
+from src.datasets.txt_to_csv import txt_to_csv
 import pandas as pd
 from pathlib import Path
 import ot
 import numpy as np
 import matplotlib.pyplot as plt
-import utils
+import src.utils as utils
 
 if __name__ == "__main__":
     print("hey")
