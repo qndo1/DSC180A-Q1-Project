@@ -1,4 +1,5 @@
 import numpy as np
+import utils
 
 def accuracy(matching):
     """
@@ -22,3 +23,31 @@ def dist_accuracy(pc1, pc2, matching):
     diffs = row_normed @ pc2 - pc2
     diffnorms = np.linalg.norm(diffs, axis = 1)
     return np.mean(diffnorms)
+
+def partial_accuracy(G, source, source_points_removed, source_indices_removed, source_indices, target_indiced_removed, target_indices, thresh):
+    """
+    Returns:
+    (# correct matchings + # correctly missing matchings) / (# of original points)
+    (# correct matchings) / (# possible correct matchings)
+    (# correctly missing matchings) / (# points that were removed in either target or source)
+    """
+
+    matching = utils.construct_index_match(G, source, source_points_removed, source_indices_removed, target_indices, thresh, original_indices=True)
+
+    correct = 0
+    correctly_missing = 0
+    total_correct = len(set(source_indices).intersection(set(target_indices)))
+    total_missing = source.shape[0] - total_correct
+    total = source.shape[0]
+
+    for i in range(total):
+        if i in matching and matching[i] == i:
+            correct += 1
+        elif i in source_indices_removed or i in target_indiced_removed:
+            if i not in matching:
+                correctly_missing += 1
+        else:
+            pass
+
+    return (correct + correctly_missing) / total, correct / total_correct, correctly_missing / total_missing
+

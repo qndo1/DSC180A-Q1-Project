@@ -256,7 +256,17 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
 
     return fig
 
-def remove_points_then_match(source, target, alpha = 0):
+def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW"):
+    """
+    Returns:
+    G (matching)
+    source_points_removed (source good points only)
+    target_points_removed (target good points only)
+    source_indices_removed (indices of removed source points)
+    target_indices_removed (indices of removed target points)
+    source_indices (indices of good source points)
+    target_indices (indices of good target points)
+    """
     
     source_points_removed = []
     target_points_removed = []
@@ -289,29 +299,48 @@ def remove_points_then_match(source, target, alpha = 0):
     C1 = sp.spatial.distance.cdist(source_points_removed, source_points_removed)
     C2 = sp.spatial.distance.cdist(target_points_removed, target_points_removed)
 
-    G = ot.fused_gromov_wasserstein(M, C1, C2, alpha=alpha)
+    if matchtype == "FGW":
+        G = ot.fused_gromov_wasserstein(M, C1, C2, alpha=alpha)
+    elif matchtype == "pGW":
+        G = ot.gromov.partial_gromov_wasserstein(C1, C2, a, b)
+    else:
+        G = ot.solve(M, a, b).plan
 
     output = (
         G,
         source_points_removed,
         target_points_removed,
-        source_indices,
-        target_indices,
         source_indices_removed,
-        target_indices_removed
+        target_indices_removed,
+        source_indices,
+        target_indices
     )
 
     return output
 
-def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0):
-
-    
-    G, source_points_removed, target_points_removed, source_indices, target_indices, source_indices_removed, target_indiced_removed = remove_points_then_match(source, target,alpha = alpha)
-
+def construct_index_match(G, source, source_points_removed, source_indices_removed, target_indices, thresh, original_indices = False):
+    """
+    original_indices is a boolean of whether you want the indices in the matching to refer to the original indices BEFORE point removal
+    """
     matching = {}
-    correct_dict = {}
     removed_counter = 0
 
+    for i in range(source.shape[0]):
+        if i in source_indices_removed:
+            removed_counter += 1
+            continue
+        ind = i - removed_counter
+        if G[ind].max() > 1 / source_points_removed.shape[0] * thresh:
+            if original_indices:
+                matching[i] = target_indices[G[ind].argmax()]
+            else:
+                matching[ind] = G[ind].argmax()
+
+    return matching
+
+def construct_correctness_dict(G, source, source_points_removed, source_indices_removed, target_indices, thresh):
+    correct_dict = {}
+    removed_counter = 0
 
     for i in range(source.shape[0]):
         if i in source_indices_removed:
@@ -319,11 +348,21 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0):
             continue
         ind = i - removed_counter
         if G[ind].max() > 1 / source_points_removed.shape[0] * thresh:
-            matching[ind] = G[ind].argmax()
             if target_indices[G[ind].argmax()] == i:
                 correct_dict[ind] = True
             else:
                 correct_dict[ind] = False
+
+    return correct_dict
+
+
+def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matchtype = "FGW"):
+
+    
+    G, source_points_removed, target_points_removed, source_indices_removed, target_indiced_removed, source_indices, target_indices = remove_points_then_match(source, target,alpha = alpha, matchtype = matchtype)
+
+    matching = construct_index_match(G, source, source_points_removed, source_indices_removed, target_indices, thresh)
+    correct_dict = construct_correctness_dict(G, source, source_points_removed, source_indices_removed, target_indices, thresh)
 
     fig = go.Figure()
 
