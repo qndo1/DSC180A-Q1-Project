@@ -15,10 +15,8 @@ import matplotlib.pyplot as plt
 import src.utils as utils
 
 if __name__ == "__main__":
-    print("hey")
-    download_mocap.main_downloader(download_limit=10_000)
-
-    txt_to_csv.convert_all_txt(convert_limit=10_000)
+    download_mocap.main_downloader(download_limit=1)
+    txt_to_csv.convert_all_txt(convert_limit=1)
 
     csv_dir = Path("datasets/csv_files")
     csv_list = sorted(csv_dir.glob("*.csv"))

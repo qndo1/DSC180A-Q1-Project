@@ -9,6 +9,7 @@ def validate_mocap_df(df, filename):
     return True
 
 def txt_to_df(path):
+    # Read the file
     df = pd.read_csv(path, sep=r"\s+")
     
     # Remove NaNs
