@@ -454,6 +454,28 @@ class DistanceProfile:
         target_geodesic = DistanceProfile.knn_geodesic_distances(self.target, k)
         return source_geodesic, target_geodesic
 
+    def compute_smallest_knn_geodesic_distance_matrix(self):
+        """
+        Compute the smallest kNN geodesic distance matrices for both source and target point clouds.
+        """
+        flag = True
+        k=1
+        while flag:
+            source_geodesic = DistanceProfile.knn_geodesic_distances(self.source, k)
+            if np.isinf(source_geodesic).any():
+                k += 1
+            else:
+                flag = False
+        k=1
+        flag = True
+        while flag:
+            target_geodesic = DistanceProfile.knn_geodesic_distances(self.target, k)
+            if np.isinf(target_geodesic).any():
+                k += 1
+            else:
+                flag = False
+        return source_geodesic, target_geodesic
+
 
 #Quy-Dzu work
 
