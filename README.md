@@ -1,26 +1,43 @@
-# DSC180A-Q1-Project
-Repository for Quarter 1 Replication Project, DSC 180A  
+# DSC180A Q1 Project - Point Cloud Matching with MoCap Data
+**Authors:** Quy-Dzu Do, Takafumi Matsui, Matt Tokunaga, Caden Pascual  
+**Domain:** B06  
+**Mentors:** Alex Cloninger, Rayan Saab  
 
 ## Overview 
-This repository contains the implementation of our Q1 project, focused on point cloud matching, calculating distance mectrics, as well as optimal transport methods (W1, W2, Gromov-Wasserstein). This project explores how different profile matching and accuracy functions can be applied on MOCAP (motion-capture) data.
+This repository contains the implementation of our Q1 DSC180A replication project. This project focuses on:
+- Matching MoCap (motion-capture) point clouds
+- Calculating distance mectrics (L1, L2)
+- Using optimal transport methods (Wasserstein W1, W2, Gromov-Wasserstein) 
+- Evaluating multi-frame matching accuracy
+
+Our goal is to explore how different **distance profile matching** and **accuracy** functions can be applied on MoCap data.
+
 
 
 ## Repository Structure
 ```
 DSC180A-Q1-Project/
-├── datasets/               # point clouds
-│   ├── csv_files/          # MOCAP data in CSV form
-│   └── txt_files/          # MOCAP data in TXT form
-├── src/                    # All processing, matching, and evaluation code
-│   ├── __init__.py         # make src a Python package
-│   ├── accuracy/           # accuracy(), dist_accuracy()
-│   └── utils/              # LoadCloudPoint, DistanceProfile, plotting functions
-├── notebooks/              # Used for visualizations
-├── scripts/
-│   ├── matt_script.py      # Multi-frame matching animation using OT plans
-│   └── script.py           # Downloads mocap data, converts CSV, runs GW
-├── requirements.txt        # Reproducible conda environment
-└── README.md               # Project documentation
+├─ datasets/                          # Folder for all data (raw and processed)
+│  ├─ csv_files/                         # MoCap CSV files generated from TXT files (processed)
+│  └─ txt_files/                         # Original MoCap TXT files (raw)
+├─ src/                               # Root for all Python code
+│  ├─ scripts/                          # CLI scripts to run tasks
+│  │  ├─ __init__.py                     # Makes scripts/ a Python module
+│  │  ├─ download_and_convert.py         # Script with main() to download and convert data
+│  │  └─ multi_frame_ot.py               # Multi-frame matching animation using OT plans
+│  └─ dsc180a_q1_project/             # Main package
+│     ├─ __init__.py                     # Exposes key utilities for easy imports
+│     ├─ accuracy.py                     # Accuracy functions
+│     ├─ utils.py                        # Core classes/functions: LoadCloudPoint, DistanceProfile, plotting
+│     └─ datasets/                       # Helper modules for dataset handling
+│        ├─ __init__.py                  # Makes datasets/ a Python module
+│        ├─ download_mocap.py            # Functions to download MoCap data
+│        └─ txt_to_csv.py                # Functions to convert TXT files to CSV   
+├─ notebooks/                         # Used for visualizations/experimentation
+├─ images/                            # Miscellaneous images
+├─ setup.py                # Package setup file, defines dependencies and CLI entry points
+├─ requirements.txt        # List of Python dependencies for pip
+└─ README.md               # Project documentation
 ```
 
 ### Notebooks
@@ -28,39 +45,67 @@ DSC180A-Q1-Project/
 All notebooks are in the `notebooks/` folder and are used for exploration, visualization, and testing of point cloud matching algorithms.
 
 | Notebook | Purpose / Experiments |
-|----------|---------------------|
-| `distance_profile.ipynb` | Load and visualize point clouds, remove outliers, cluster joints, compute L2 distance profiles, 3D visualizations, and matching accuracy. |
-| `distance_profile_qndo.ipynb` | Compare distance-profile OT (L1 & L2), vanilla OT, and GW OT matchings; visualize 3D matchings and compute accuracy. |
-| `fused_gromov.ipynb` | Apply Fused Gromov-Wasserstein OT, sweep alpha parameters, evaluate multi-timestep accuracy, and compare with standard Wasserstein. |
+| -------- | ------------------- |
+| `distance_profile.ipynb`       | Load point clouds, remove outliers, cluster joints, compute distance profiles, visualize skeletons, and evaluate accuracy. |
+| `distance_profile_qndo.ipynb`  | Compare distance-profile OT, vanilla OT, and GW OT matchings. Visualize results and compute accuracy curves. |
+| `fused_gromov.ipynb`           | Apply Fused Gromov-Wasserstein OT, sweep α parameter, evaluate multi-frame alignment, compare with standard Wasserstein matching. |
+| `spectral_clustering.ipynb`    | Cluster joints into body segments using pairwise distances, evaluate consistency across subjects. |
+| `takafumi_explore.ipynb`       | Analyze inter-joint stability, temporal variance, and motion-specific trajectory patterns. |
+| `test2.ipynb` | Visualize joint-to-joint matching, compute OT/Hungarian matches, evaluate errors. |
 
-## Running the Pipeline
- This project demonstrates point cloud matching on MOCAP data using Optimal Transport, Distance Profiling, and Gromov-Wasserstein methods.
+## Code Replication
+ This project demonstrates point cloud matching on MOCAP data using Optimal Transport, Distance Profiling, and Gromov-Wasserstein methods. All code replication can be done from Terminal. 
 
 ### 1. Setup
-Install Dependencies
+Follow these steps to clone the repository and set up the environment:
 
-``` bash
-conda create -n dsc180a python=3.11
-conda activate dsc180a
+**Clone the Repository**
+```bash
+git clone https://github.com/qndo1/DSC180A-Q1-Project.git
+cd DSC180A-Q1-Project
+```
+**Set Up and Activate Conda Environment**
+```bash
+# Create and activate new environment with Python 3.11
+conda create -n dsc180a-q1 python=3.11
+conda activate dsc180a-q1
+```
+**Install Dependencies**
+```bash
+conda install pip
+# Install dependencies from requirements.txt
 pip install -r requirements.txt
 ```
 
-### 2. Data Acquisition
+**Install the package and dependencies**
+```bash
+# Install locally in editable mode
+pip install -e .
+```
+
+### 2. Data Acquisition + Gromov-Wasserstein
+This script downloads a sample MoCap file and displays the optimal transport matching between the first and 500th frames. By default, the download and conversion limits are set to 1 for quick testing, but you can remove these limits in src/scripts/download_and_convert.py
+
 ```bash 
-# Download MoCap data (max 10,000 files)
-python scripts/download_and_convert.py
+# Download MoCap file, Runs Gromov-Wasserstein on distant frames
+download_csv
+```
+<img src="images/frame1_frame500_pairing_example.png" alt="Matching between first and 500th frame" width="500"/>
+
+
+### 3. Point Cloud Matching and Animation
+This script performs **point cloud matching** on a sample MoCap CSV file and then animates the results using Optimal Transport.  
+The workflow:
+- Loads a MoCap CSV File as 3D point clouds.
+- Compares the first frame to subsequent frames using OT.
+- Stores matching matrices for each frame.
+- Animates point correspondences, red points being the subsequent frames.
+
+```bash
+# Run the point cloud matching and animation script
+multi_frame_ot
 ```
 
-
-
-### SFU MOCAP data
-run
-```
-    download_and_convert.py
-```
-This should download one of the mocap files and show the optimal transport matching between the first frame and the 500th frame. We've set the download and conversion limits as being 1, but feel free to remove those limits in script.py to download and convert the entire dataset.
-
-![Image showing the matching between the first and 500th frame of mocap data](images/frame1_frame500_pairing_example.png)
 
 ## Sources/References
 1. **Python Optimal Transport (POT)** – Library for optimal transport computations, including Wasserstein and Gromov-Wasserstein distances: [https://pythonot.github.io/](https://pythonot.github.io/)
