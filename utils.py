@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import pandas as pd
 from pathlib import Path
 import ot
+import os
+import random
 import scipy as sp
 import matplotlib.pyplot as plt
 
@@ -260,7 +262,7 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_yz=Tr
 
     return fig
 
-def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW"):
+def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW", p = float("inf")):
     """
     Returns:
     G (matching)
@@ -307,6 +309,10 @@ def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW"):
         G = ot.fused_gromov_wasserstein(M, C1, C2, alpha=alpha)
     elif matchtype == "pGW":
         G = ot.gromov.partial_gromov_wasserstein(C1, C2, a, b)
+    elif matchtype == "DPM":
+        C1 = sp.spatial.distance.cdist(source, source)
+        C2 = sp.spatial.distance.cdist(target, target)
+        G = dpm_finite_p(C1, C2, p = p)
     else:
         G = ot.solve(M, a, b).plan
 
@@ -339,6 +345,7 @@ def construct_index_match(G, source, source_points_removed, source_indices_remov
                 matching[i] = target_indices[G[ind].argmax()]
             else:
                 matching[ind] = G[ind].argmax()
+
 
     return matching
 
@@ -418,6 +425,144 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matcht
 
     return fig
 
+def get_random_clouds(range_length = 100):
+    lcp = LoadCloudPoint()
+    return lcp.get_pointsclouds_random_range(range_length)
+
+def test_acc_random_pose(accfunc, matchtype, range_length = 100, remove_points = False, alpha = 0.5, threshold = 0.5, p = float("inf")):
+    import accuracy
+    clouds = get_random_clouds(range_length)
+
+    accs = []
+
+    for i in range(range_length):
+        if remove_points:
+            if accfunc != accuracy.partial_accuracy:
+                print("Using partial accuracy instead")
+            if matchtype == "DPM":
+                pi, I = compute_W_matrix_distance_matrix_input_finite_p(
+                    sp.spatial.distance.cdist(clouds[0], clouds[0]),
+                    sp.spatial.distance.cdist(clouds[i], clouds[i]),
+                    p = p
+                )
+                correct = sum([k == pi[k] for k in I])
+                correctly_missing = 0
+                for j in range(clouds[0].shape[0]):
+                    if (np.prod(clouds[0][j]) == 0 or np.prod(clouds[i][j]) == 0) and j not in I:
+                        correctly_missing += 1
+                accs.append((correct + correctly_missing) / clouds[0].shape[0])
+                continue
+            G, source_points_removed, target_points_removed, source_indices_removed, target_indices_removed, source_indices, target_indices = remove_points_then_match(clouds[0], clouds[i], matchtype = matchtype, alpha = alpha)
+            acc = accuracy.partial_accuracy(G, clouds[0], source_points_removed, source_indices_removed, source_indices, target_indices_removed, target_indices, thresh = threshold)[0]
+            accs.append(acc)
+        else:
+            C1 = sp.spatial.distance.cdist(clouds[0], clouds[0])
+            C2 = sp.spatial.distance.cdist(clouds[i], clouds[i])           
+            if matchtype == "FGW":
+                M = ot.dist(clouds[0], clouds[i])
+                G = ot.fused_gromov_wasserstein(M, C1, C2, alpha = alpha)
+            elif matchtype == "pGW":
+                a = np.ones(clouds[0].shape[0]) / clouds[0].shape[0]
+                b = np.ones(clouds[i].shape[0]) / clouds[i].shape[0]
+                G = ot.gromov.partial_gromov_wasserstein(C1, C2, a, b)
+            else:
+                if matchtype != "DPM":
+                    print("Unknown matchtype provided, will proceed using distance profile matching. Current supported options are 'FGW', 'pGW', 'DPM'.")
+                G = dpm_finite_p(C1, C2, p = p)   
+            if accfunc == accuracy.accuracy:
+                accs.append(accfunc(G))
+            elif accfunc == accuracy.dist_accuracy:
+                accs.append(accfunc(clouds[0], clouds[i], G))
+
+    return accs
+
+def test_acc_many_poses(accfunc, matchtype, num_poses = 100, range_length = 100, remove_points = False, alpha = 0.5, threshold = 0.5, p = float("inf")):
+    all_accs = []
+    for _ in range(num_poses):
+        accs = test_acc_random_pose(accfunc, matchtype=matchtype, range_length=range_length, remove_points=remove_points, alpha = alpha, threshold=threshold, p = p)
+        all_accs.append(accs)
+    return np.array(all_accs).mean(axis = 0)
+
+def compute_W_matrix_distance_matrix_input_finite_p(X_dists, Y_dists, p=float("inf")):
+    n, _ = X_dists.shape
+    m, _ = Y_dists.shape
+
+    # Pre-sort each row (for 1D Wasserstein)
+    X_sorted = np.sort(X_dists, axis=1)  # (n,d)
+    Y_sorted = np.sort(Y_dists, axis=1)  # (m,d)
+
+    # Compute pairwise Wasserstein distances using broadcasting
+    abs_diff = np.abs(X_sorted[:, None, :] - Y_sorted[None, :, :])  # (n,m,d)
+    W = np.mean(abs_diff, axis=2)  # (n,m)
+
+    # Find argmin and threshold indices
+    pi_arr = np.argmin(W, axis=1)
+    I_arr = np.where(np.min(W, axis=1) < p)[0]
+
+    # Optional: convert pi_arr to dict if you really want
+    pi = {i: pi_arr[i] for i in range(n)}
+
+    return pi, list(I_arr)
+
+
+def dpm_finite_p(c1, c2, p = float("inf")):
+    out = np.zeros((c1.shape[0], c2.shape[0]))
+    pi, I = compute_W_matrix_distance_matrix_input_finite_p(c1, c2, p)
+    for i in I:
+        out[i, pi[i]] = 1 / c1.shape[0]
+    return out
+
+def acc_full_test(num_poses = 2):
+    import accuracy
+    matchtypes_labels = [
+        ("FGW", 0),
+        ("FGW", 0.5),
+        ("FGW", 1),
+        ("pGW", 0),
+        ("DPM", 0)
+    ]
+    accfunc = accuracy.accuracy
+    for matchtype, alpha in matchtypes_labels:
+        if matchtype == "FGW":
+            label = matchtype + f" alpha = {alpha}"
+        else:
+            label = matchtype
+        plt.plot(
+            test_acc_many_poses(accfunc, matchtype, num_poses=num_poses, remove_points=False, alpha = alpha),
+            label = label
+        )
+        print(f"Plotted {label}")
+    plt.xlabel("Timesteps From Start")
+    plt.ylabel(r"Mean $\text{Acc}_{\text{full}}$")
+    plt.title(r"Mean $\text{Acc}_{\text{full}}$ by Time Delta")
+    plt.legend()
+    plt.show()
+
+def acc_dist_test(num_poses = 2):
+    import accuracy
+    matchtypes_labels = [
+        ("FGW", 0),
+        ("FGW", 0.5),
+        ("FGW", 1),
+        ("pGW", 0),
+        ("DPM", 0)
+    ]
+    accfunc = accuracy.dist_accuracy
+    for matchtype, alpha in matchtypes_labels:
+        if matchtype == "FGW":
+            label = matchtype + f" alpha = {alpha}"
+        else:
+            label = matchtype
+        plt.plot(
+            test_acc_many_poses(accfunc, matchtype, num_poses=num_poses, remove_points=False, alpha = alpha),
+            label = label
+        )
+        print(f"Plotted {label}")
+    plt.xlabel("Timesteps From Start")
+    plt.ylabel(r"Mean $\text{Acc}_{\text{full}}$")
+    plt.title(r"Mean $\text{Acc}_{\text{full}}$ by Time Delta")
+    plt.legend()
+    plt.show()
 
 # ----------------------------------------------------
 # Takafumi's work
@@ -431,7 +576,7 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matcht
 # ----------------------------------------------------
 
 class LoadCloudPoint:
-    def __init__(self, filepath=None):
+    def __init__(self, filepath=None, verbose = False):
         """
         Load point cloud data from a CSV file. If no filepath is provided, randomly select one from the datasets/csv_files directory.
         """
@@ -444,7 +589,9 @@ class LoadCloudPoint:
 
         self.filepath = Path(filepath)
         self.point_cloud = pd.read_csv(filepath).to_numpy()
-        print(f"Loaded point cloud data from {self.filepath}, number of frames: {self.point_cloud.shape[0]}")
+        self.verbose = verbose
+        if self.verbose:
+            print(f"Loaded point cloud data from {self.filepath}, number of frames: {self.point_cloud.shape[0]}")
 
     def get_entire_point_cloud(self):
         """
@@ -476,6 +623,13 @@ class LoadCloudPoint:
         output = []
         for index in indices:
             output.append(self.point_cloud[index].reshape(-1, 3))
+        return output
+    
+    def get_pointsclouds_random_range(self, range_length):
+        start_idx = np.random.choice(self.point_cloud.shape[0] - range_length - 1)
+        output = []
+        for idx in np.arange(start_idx, start_idx + range_length):
+            output.append(self.point_cloud[idx].reshape(-1, 3))
         return output
     
     def get_t_distant_point_cloud(self, t=500):

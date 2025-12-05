@@ -49,9 +49,9 @@ def point_removal_test(thresh):
     fig.show()
 
 if __name__ == "__main__":
-    #animation_test()
+    animation_test()
     #point_removal_test(.9)
-    point_removal_test(.5)
+    #point_removal_test(.5)
 
     pass
 
