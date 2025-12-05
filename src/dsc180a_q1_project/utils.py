@@ -6,6 +6,8 @@ pio.renderers.default = "browser"
 import pandas as pd
 from pathlib import Path
 import ot
+import os
+import random
 import scipy as sp
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +17,7 @@ from ot import wasserstein_1d, emd
 
 # Matt work
 
-def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_incorrect = False):
+def plot_3d_points_and_connections(points1, points2, G, switch_yz = True, color_incorrect = False):
     """
     Given points1, points2, and G, plot the points and lines between matching points. If switch_xz is true then this will switch the x and z coordinates before plotting (since by default in the mocap data the x is the vertical axis).
     points1, points2: Nx3 arrays
@@ -37,11 +39,12 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_
     if np.count_nonzero(G) < points1.shape[0]:
         raise ValueError("Matching has too few nonzero entries")
 
-    if switch_xz:
-        x_ind = 2
-        z_ind = 0
+    x_ind = 0
+    if switch_yz:
+        y_ind = 2
+        z_ind = 1
     else:
-        x_ind = 0
+        y_ind = 1
         z_ind = 2
 
     # Ensure numpy arrays
@@ -53,7 +56,7 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_
 
     # Plot first set of 3D points
     fig.add_trace(go.Scatter3d(
-        x=points1[:, x_ind], y=points1[:, 1], z=points1[:, z_ind],
+        x=points1[:, x_ind], y=points1[:, y_ind], z=points1[:, z_ind],
         mode='markers',
         marker=dict(size=5, color='blue'),
         name='Points 1'
@@ -61,7 +64,7 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_
 
     # Plot second set of 3D points
     fig.add_trace(go.Scatter3d(
-        x=points2[:, x_ind], y=points2[:, 1], z=points2[:, z_ind],
+        x=points2[:, x_ind], y=points2[:, y_ind], z=points2[:, z_ind],
         mode='markers',
         marker=dict(size=5, color='red'),
         name='Points 2'
@@ -78,7 +81,7 @@ def plot_3d_points_and_connections(points1, points2, G, switch_xz = True, color_
                 p2 = points2[j]
                 fig.add_trace(go.Scatter3d(
                     x=[p1[x_ind], p2[x_ind]],
-                    y=[p1[1], p2[1]],
+                    y=[p1[y_ind], p2[y_ind]],
                     z=[p1[z_ind], p2[z_ind]],
                     mode='lines',
                     line=dict(color=c, width=2),
@@ -117,7 +120,7 @@ def compute_gw_and_plot(xs, xt):
     print("hi")
     return fig, G0
 
-def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=True, color_incorrect=False):
+def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_yz=True, color_incorrect=False):
     """
     Create a Plotly animation where each frame shows two point clouds and
     the matchings between them.
@@ -132,10 +135,13 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
         raise ValueError("points1_list, points2_list, and G_list must have same length")
 
     # Axis swapping logic
-    if switch_xz:
-        x_ind, z_ind = 2, 0
+    x_ind = 0
+    if switch_yz:
+        y_ind = 2
+        z_ind = 1
     else:
-        x_ind, z_ind = 0, 2
+        y_ind = 1
+        z_ind = 2
 
     # Prepare base figure
     fig = go.Figure()
@@ -147,11 +153,11 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
 
     # Scatter traces for points (these remain and are updated in frames)
     fig.add_trace(go.Scatter3d(
-        x=p1[:, x_ind], y=p1[:, 1], z=p1[:, z_ind],
+        x=p1[:, x_ind], y=p1[:, y_ind], z=p1[:, z_ind],
         mode="markers", marker=dict(size=5, color="blue"), name="Points 1"
     ))
     fig.add_trace(go.Scatter3d(
-        x=p2[:, x_ind], y=p2[:, 1], z=p2[:, z_ind],
+        x=p2[:, x_ind], y=p2[:, y_ind], z=p2[:, z_ind],
         mode="markers", marker=dict(size=5, color="red"), name="Points 2"
     ))
 
@@ -185,7 +191,7 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
                     p1i = p1[i]
                     p2j = p2[j]
                     xs.append([p1i[x_ind], p2j[x_ind]])
-                    ys.append([p1i[1],    p2j[1]])
+                    ys.append([p1i[y_ind],    p2j[y_ind]])
                     zs.append([p1i[z_ind], p2j[z_ind]])
                     colors.append("red" if color_incorrect and i != j else "gray")
 
@@ -202,11 +208,11 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
 
         # Updated points
         frame_data.append(go.Scatter3d(
-            x=p1[:, x_ind], y=p1[:, 1], z=p1[:, z_ind],
+            x=p1[:, x_ind], y=p1[:, y_ind], z=p1[:, z_ind],
             mode="markers", marker=dict(size=5, color="blue")
         ))
         frame_data.append(go.Scatter3d(
-            x=p2[:, x_ind], y=p2[:, 1], z=p2[:, z_ind],
+            x=p2[:, x_ind], y=p2[:, y_ind], z=p2[:, z_ind],
             mode="markers", marker=dict(size=5, color="red")
         ))
 
@@ -261,7 +267,7 @@ def animate_point_cloud_matches(points1_list, points2_list, G_list, switch_xz=Tr
 
     return fig
 
-def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW"):
+def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW", p = float("inf")):
     """
     Returns:
     G (matching)
@@ -308,6 +314,10 @@ def remove_points_then_match(source, target, alpha = 0, matchtype = "FGW"):
         G = ot.fused_gromov_wasserstein(M, C1, C2, alpha=alpha)
     elif matchtype == "pGW":
         G = ot.gromov.partial_gromov_wasserstein(C1, C2, a, b)
+    elif matchtype == "DPM":
+        C1 = sp.spatial.distance.cdist(source, source)
+        C2 = sp.spatial.distance.cdist(target, target)
+        G = dpm_finite_p(C1, C2, p = p)
     else:
         G = ot.solve(M, a, b).plan
 
@@ -341,6 +351,7 @@ def construct_index_match(G, source, source_points_removed, source_indices_remov
             else:
                 matching[ind] = G[ind].argmax()
 
+
     return matching
 
 def construct_correctness_dict(G, source, source_points_removed, source_indices_removed, target_indices, thresh):
@@ -361,13 +372,21 @@ def construct_correctness_dict(G, source, source_points_removed, source_indices_
     return correct_dict
 
 
-def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matchtype = "FGW"):
+def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matchtype = "FGW", switch_yz = True):
 
     
     G, source_points_removed, target_points_removed, source_indices_removed, target_indiced_removed, source_indices, target_indices = remove_points_then_match(source, target,alpha = alpha, matchtype = matchtype)
 
     matching = construct_index_match(G, source, source_points_removed, source_indices_removed, target_indices, thresh)
     correct_dict = construct_correctness_dict(G, source, source_points_removed, source_indices_removed, target_indices, thresh)
+
+    x_ind = 0
+    if switch_yz:
+        y_ind = 2
+        z_ind = 1
+    else:
+        y_ind = 1
+        z_ind = 2
 
     fig = go.Figure()
 
@@ -383,9 +402,9 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matcht
         else:
             xs, ys, zs = xs_red, ys_red, zs_red
 
-        xs += [p1[2], p2[2], None]
-        ys += [p1[1], p2[1], None]
-        zs += [p1[0], p2[0], None]
+        xs += [p1[x_ind], p2[x_ind], None]
+        ys += [p1[y_ind], p2[y_ind], None]
+        zs += [p1[z_ind], p2[z_ind], None]
 
     fig.add_trace(go.Scatter3d(
         x=xs_gray, y=ys_gray, z=zs_gray, 
@@ -401,16 +420,154 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matcht
 
     
     fig.add_trace(go.Scatter3d(
-        x=source_points_removed[:, 2], y=source_points_removed[:, 1], z=source_points_removed[:, 0],
+        x=source_points_removed[:, x_ind], y=source_points_removed[:, y_ind], z=source_points_removed[:, z_ind],
         mode="markers", marker=dict(size=5, color="blue"), name="Points 1"
     ))
     fig.add_trace(go.Scatter3d(
-        x=target_points_removed[:, 2], y=target_points_removed[:, 1], z=target_points_removed[:, 0],
+        x=target_points_removed[:, x_ind], y=target_points_removed[:, y_ind], z=target_points_removed[:, z_ind],
         mode="markers", marker=dict(size=5, color="red"), name="Points 2"
     ))
 
     return fig
 
+def get_random_clouds(range_length = 100):
+    lcp = LoadCloudPoint()
+    return lcp.get_pointsclouds_random_range(range_length)
+
+def test_acc_random_pose(accfunc, matchtype, range_length = 100, remove_points = False, alpha = 0.5, threshold = 0.5, p = float("inf")):
+    import accuracy
+    clouds = get_random_clouds(range_length)
+
+    accs = []
+
+    for i in range(range_length):
+        if remove_points:
+            if accfunc != accuracy.partial_accuracy:
+                print("Using partial accuracy instead")
+            if matchtype == "DPM":
+                pi, I = compute_W_matrix_distance_matrix_input_finite_p(
+                    sp.spatial.distance.cdist(clouds[0], clouds[0]),
+                    sp.spatial.distance.cdist(clouds[i], clouds[i]),
+                    p = p
+                )
+                correct = sum([k == pi[k] for k in I])
+                correctly_missing = 0
+                for j in range(clouds[0].shape[0]):
+                    if (np.prod(clouds[0][j]) == 0 or np.prod(clouds[i][j]) == 0) and j not in I:
+                        correctly_missing += 1
+                accs.append((correct + correctly_missing) / clouds[0].shape[0])
+                continue
+            G, source_points_removed, target_points_removed, source_indices_removed, target_indices_removed, source_indices, target_indices = remove_points_then_match(clouds[0], clouds[i], matchtype = matchtype, alpha = alpha)
+            acc = accuracy.partial_accuracy(G, clouds[0], source_points_removed, source_indices_removed, source_indices, target_indices_removed, target_indices, thresh = threshold)[0]
+            accs.append(acc)
+        else:
+            C1 = sp.spatial.distance.cdist(clouds[0], clouds[0])
+            C2 = sp.spatial.distance.cdist(clouds[i], clouds[i])           
+            if matchtype == "FGW":
+                M = ot.dist(clouds[0], clouds[i])
+                G = ot.fused_gromov_wasserstein(M, C1, C2, alpha = alpha)
+            elif matchtype == "pGW":
+                a = np.ones(clouds[0].shape[0]) / clouds[0].shape[0]
+                b = np.ones(clouds[i].shape[0]) / clouds[i].shape[0]
+                G = ot.gromov.partial_gromov_wasserstein(C1, C2, a, b)
+            else:
+                if matchtype != "DPM":
+                    print("Unknown matchtype provided, will proceed using distance profile matching. Current supported options are 'FGW', 'pGW', 'DPM'.")
+                G = dpm_finite_p(C1, C2, p = p)   
+            if accfunc == accuracy.accuracy:
+                accs.append(accfunc(G))
+            elif accfunc == accuracy.dist_accuracy:
+                accs.append(accfunc(clouds[0], clouds[i], G))
+
+    return accs
+
+def test_acc_many_poses(accfunc, matchtype, num_poses = 100, range_length = 100, remove_points = False, alpha = 0.5, threshold = 0.5, p = float("inf")):
+    all_accs = []
+    for _ in range(num_poses):
+        accs = test_acc_random_pose(accfunc, matchtype=matchtype, range_length=range_length, remove_points=remove_points, alpha = alpha, threshold=threshold, p = p)
+        all_accs.append(accs)
+    return np.array(all_accs).mean(axis = 0)
+
+def compute_W_matrix_distance_matrix_input_finite_p(X_dists, Y_dists, p=float("inf")):
+    n, _ = X_dists.shape
+    m, _ = Y_dists.shape
+
+    # Pre-sort each row (for 1D Wasserstein)
+    X_sorted = np.sort(X_dists, axis=1)  # (n,d)
+    Y_sorted = np.sort(Y_dists, axis=1)  # (m,d)
+
+    # Compute pairwise Wasserstein distances using broadcasting
+    abs_diff = np.abs(X_sorted[:, None, :] - Y_sorted[None, :, :])  # (n,m,d)
+    W = np.mean(abs_diff, axis=2)  # (n,m)
+
+    # Find argmin and threshold indices
+    pi_arr = np.argmin(W, axis=1)
+    I_arr = np.where(np.min(W, axis=1) < p)[0]
+
+    # Optional: convert pi_arr to dict if you really want
+    pi = {i: pi_arr[i] for i in range(n)}
+
+    return pi, list(I_arr)
+
+
+def dpm_finite_p(c1, c2, p = float("inf")):
+    out = np.zeros((c1.shape[0], c2.shape[0]))
+    pi, I = compute_W_matrix_distance_matrix_input_finite_p(c1, c2, p)
+    for i in I:
+        out[i, pi[i]] = 1 / c1.shape[0]
+    return out
+
+def acc_full_test(num_poses = 2):
+    import accuracy
+    matchtypes_labels = [
+        ("FGW", 0),
+        ("FGW", 0.5),
+        ("FGW", 1),
+        ("pGW", 0),
+        ("DPM", 0)
+    ]
+    accfunc = accuracy.accuracy
+    for matchtype, alpha in matchtypes_labels:
+        if matchtype == "FGW":
+            label = matchtype + f" alpha = {alpha}"
+        else:
+            label = matchtype
+        plt.plot(
+            test_acc_many_poses(accfunc, matchtype, num_poses=num_poses, remove_points=False, alpha = alpha),
+            label = label
+        )
+        print(f"Plotted {label}")
+    plt.xlabel("Timesteps From Start")
+    plt.ylabel(r"Mean $\text{Acc}_{\text{full}}$")
+    plt.title(r"Mean $\text{Acc}_{\text{full}}$ by Time Delta")
+    plt.legend()
+    plt.show()
+
+def acc_dist_test(num_poses = 2):
+    import accuracy
+    matchtypes_labels = [
+        ("FGW", 0),
+        ("FGW", 0.5),
+        ("FGW", 1),
+        ("pGW", 0),
+        ("DPM", 0)
+    ]
+    accfunc = accuracy.dist_accuracy
+    for matchtype, alpha in matchtypes_labels:
+        if matchtype == "FGW":
+            label = matchtype + f" alpha = {alpha}"
+        else:
+            label = matchtype
+        plt.plot(
+            test_acc_many_poses(accfunc, matchtype, num_poses=num_poses, remove_points=False, alpha = alpha),
+            label = label
+        )
+        print(f"Plotted {label}")
+    plt.xlabel("Timesteps From Start")
+    plt.ylabel(r"Mean $\text{Acc}_{\text{full}}$")
+    plt.title(r"Mean $\text{Acc}_{\text{full}}$ by Time Delta")
+    plt.legend()
+    plt.show()
 
 # ----------------------------------------------------
 # Takafumi's work
@@ -424,11 +581,7 @@ def plot_matching_points_removed(source, target, thresh = 0.5, alpha = 0, matcht
 # ----------------------------------------------------
 
 class LoadCloudPoint:
-    """
-    This class holds functions to load point cloud data from CSV files and provide methods to access 
-    different point clouds.
-    """
-    def __init__(self, filepath=None, missing_point=False):
+    def __init__(self, filepath=None, verbose = False):
         """
         Load point cloud data from a CSV file. If no filepath is provided, randomly select one from 
         the datasets/csv_files directory.
@@ -442,18 +595,10 @@ class LoadCloudPoint:
             pass
         
         self.filepath = Path(filepath)
-
-        if missing_point == True:
-            data = np.loadtxt(filepath, delimiter=",", skiprows=1)
-            n_frames = data.shape[0]
-            n_markers = data.shape[1] // 3
-            final_array = data.reshape(n_frames, n_markers, 3)
-            final_array[(final_array[:, :, 1] == 0) & (final_array[:, :, 2] == 0)] = np.nan
-            self.point_cloud = final_array
-        else:
-            self.point_cloud = np.loadtxt(filepath, delimiter=",", skiprows=1)
-        
-        print(f"Loaded point cloud data from {self.filepath}, number of frames: {self.point_cloud.shape[0]}")
+        self.point_cloud = pd.read_csv(filepath).to_numpy()
+        self.verbose = verbose
+        if self.verbose:
+            print(f"Loaded point cloud data from {self.filepath}, number of frames: {self.point_cloud.shape[0]}")
 
     def get_entire_point_cloud(self):
         """
@@ -485,6 +630,13 @@ class LoadCloudPoint:
         output = []
         for index in indices:
             output.append(self.point_cloud[index].reshape(-1, 3))
+        return output
+    
+    def get_pointsclouds_random_range(self, range_length):
+        start_idx = np.random.choice(self.point_cloud.shape[0] - range_length - 1)
+        output = []
+        for idx in np.arange(start_idx, start_idx + range_length):
+            output.append(self.point_cloud[idx].reshape(-1, 3))
         return output
     
     def get_t_distant_point_cloud(self, t=500):
