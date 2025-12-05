@@ -53,15 +53,31 @@ All notebooks are in the `notebooks/` folder and are used for exploration, visua
 | `takafumi_explore.ipynb`       | Analyze inter-joint stability, temporal variance, and motion-specific trajectory patterns. |
 | `test2.ipynb` | Visualize joint-to-joint matching, compute OT/Hungarian matches, evaluate errors. |
 
-
-## Running the Pipeline
- This project demonstrates point cloud matching on MOCAP data using Optimal Transport, Distance Profiling, and Gromov-Wasserstein methods.
-
+## Code Replication
+ This project demonstrates point cloud matching on MOCAP data using Optimal Transport, Distance Profiling, and Gromov-Wasserstein methods. All code replication can be done from Terminal. 
 
 ### 1. Setup
+Follow these steps to clone the repository and set up the environment:
 
-Install the package and dependencies:
+**Clone the Repository**
+```bash
+git clone https://github.com/qndo1/DSC180A-Q1-Project.git
+cd DSC180A-Q1-Project
+```
+**Set Up and Activate Conda Environment**
+```bash
+# Create and activate new environment with Python 3.11
+conda create -n dsc180a-q1 python=3.11
+conda activate dsc180a-q1
+```
+**Install Dependencies**
+```bash
+conda install pip
+# Install dependencies from requirements.txt
+pip install -r requirements.txt
+```
 
+**Install the package and dependencies**
 ```bash
 # Install locally in editable mode
 pip install -e .

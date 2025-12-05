@@ -35,8 +35,6 @@ def main():
     # Select two frames to compare
     frame_one = df.iloc[0].to_numpy().reshape(-1, 3)
     frame_two = df.iloc[499].to_numpy().reshape(-1, 3)
-    print("yo")
-
     # Compute GW and plot
     fig, G0 = utils.compute_gw_and_plot(frame_one, frame_two)
     fig.show()
