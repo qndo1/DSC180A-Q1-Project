@@ -14,8 +14,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 
-from dsc180a_q1_project import utils
-from dsc180a_q1_project.datasets import download_mocap, txt_to_csv
+from dsc180a_q1_project import download_mocap, txt_to_csv, compute_gw_and_plot
 
 def main():
     # Download and convert data
@@ -36,7 +35,7 @@ def main():
     frame_one = df.iloc[0].to_numpy().reshape(-1, 3)
     frame_two = df.iloc[499].to_numpy().reshape(-1, 3)
     # Compute GW and plot
-    fig, G0 = utils.compute_gw_and_plot(frame_one, frame_two)
+    fig, G0 = compute_gw_and_plot(frame_one, frame_two)
     fig.show()
 
     # M = ot.dist(frame_one, frame_two)

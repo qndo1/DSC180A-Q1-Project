@@ -11,6 +11,7 @@ from .utils import (
     acc_rem_test,
 )
 from .accuracy import accuracy, dist_accuracy, partial_accuracy
+from .download_functions import download_mocap, txt_to_csv
 
 __all__ = [
     'LoadCloudPoint',
@@ -26,4 +27,6 @@ __all__ = [
     'accuracy',
     'dist_accuracy',
     'partial_accuracy',
+    'download_mocap',
+    'txt_to_csv',
 ]
