@@ -106,6 +106,13 @@ The workflow:
 multi_frame_ot
 ```
 
+### 4. 
+
+```bash
+# Run accuracy functions
+graphics
+```
+
 
 ## Sources/References
 1. **Python Optimal Transport (POT)** – Library for optimal transport computations, including Wasserstein and Gromov-Wasserstein distances: [https://pythonot.github.io/](https://pythonot.github.io/)
