@@ -24,12 +24,13 @@ DSC180A-Q1-Project/
 │  ├─ scripts/                          # CLI scripts to run tasks
 │  │  ├─ __init__.py                     # Makes scripts/ a Python module
 │  │  ├─ download_and_convert.py         # Script with main() to download and convert data
+│  │  ├─ graphics.py                     # Script with main() to plot 
 │  │  └─ multi_frame_ot.py               # Multi-frame matching animation using OT plans
 │  └─ dsc180a_q1_project/             # Main package
 │     ├─ __init__.py                     # Exposes key utilities for easy imports
 │     ├─ accuracy.py                     # Accuracy functions
 │     ├─ utils.py                        # Core classes/functions: LoadCloudPoint, DistanceProfile, plotting
-│     └─ datasets/                       # Helper modules for dataset handling
+│     └─ download_functions/          # Helper modules for dataset handling
 │        ├─ __init__.py                  # Makes datasets/ a Python module
 │        ├─ download_mocap.py            # Functions to download MoCap data
 │        └─ txt_to_csv.py                # Functions to convert TXT files to CSV   
@@ -90,6 +91,7 @@ This script downloads a sample MoCap file and displays the optimal transport mat
 # Download MoCap file, Runs Gromov-Wasserstein on distant frames
 download_csv
 ```
+Example image:  
 <img src="images/frame1_frame500_pairing_example.png" alt="Matching between first and 500th frame" width="500"/>
 
 
@@ -106,16 +108,27 @@ The workflow:
 multi_frame_ot
 ```
 
-### 4. 
+### 4. Accuracy Evaluation and Plotting
+This script computes three different accuracy metrics across pairs of poses and generates plots comparing multiple matching methods.
+The workflow:
+- Runs tests across a selected number of poses (default 2).
+- Computes accuracy sequences along timesteps away from the starting frame.
+- Plots comparisons for:
+    - Full accuracy (acc_full)
+    - Distance-based accuracy (acc_dist)
+    - Accuracy with removed points (acc_rem)
+- Matching Methods used:
+    - Fused Gromov-Wassserstein (FGW) (α = 0, 0.5, 1)
+    - Partial Gromov-Wasserstein (pGW)
+    - Dijkstra-based Point Matching (DPM)
 
 ```bash
 # Run accuracy functions
 graphics
 ```
 
-
 ## Sources/References
 1. **Python Optimal Transport (POT)** – Library for optimal transport computations, including Wasserstein and Gromov-Wasserstein distances: [https://pythonot.github.io/](https://pythonot.github.io/)
-2. **Motion Capture (MoCap) Dataset** – CMU MoCap database used for point cloud data: [https://mocap.cs.sfu.ca/](https://mocap.cs.sfu.ca/)
+2. **Motion Capture (MoCap) Dataset** – SFU MoCap database used for point cloud data: [https://mocap.cs.sfu.ca/](https://mocap.cs.sfu.ca/)
 3. **Robust Point Matching with Distance Profiles** – Paper introducing distance-profile-based robust point cloud matching: [https://arxiv.org/pdf/2312.12641](https://arxiv.org/pdf/2312.12641)
 

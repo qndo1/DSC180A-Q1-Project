@@ -21,6 +21,7 @@ setup(
         "console_scripts": [
         "download_csv=scripts.download_and_convert:main",
         "graphics=scripts.graphics:main",
+        "multi_frame_ot=scripts.multi_frame_ot:main",
         ],
     },
 )

@@ -562,8 +562,8 @@ def acc_dist_test(num_poses = 2):
         )
         print(f"Plotted {label}")
     plt.xlabel("Timesteps From Start")
-    plt.ylabel(r"Mean $\text{Acc}_{\text{full}}$")
-    plt.title(r"Mean $\text{Acc}_{\text{full}}$ by Time Delta")
+    plt.ylabel(r"Mean $\text{Acc}_{\text{dist}}$")
+    plt.title(r"Mean $\text{Acc}_{\text{dist}}$ by Time Delta")
     plt.legend()
     plt.show()
 
